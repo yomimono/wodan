@@ -942,7 +942,9 @@ module Make(B: EXTBLOCK)(P: PARAMS) : (S with type disk = B.t) = struct
         Lwt.return (alloc_id, child_entry)
     |Some alloc_id ->
       match lru_get cache.lru alloc_id with
-      |None -> Lwt.fail @@ Failure (Printf.sprintf "Missing LRU entry for loaded child %s %Ld" (sexp_of_childlink_entry cl |> Sexplib.Sexp.to_string) alloc_id)
+      |None ->
+        LRU.iter (fun k _v -> Logs.info (fun m -> m "LRU key %Ld" k)) cache.lru;
+        Lwt.fail @@ Failure (Printf.sprintf "Missing LRU entry for loaded child %s %Ld" (sexp_of_childlink_entry cl |> Sexplib.Sexp.to_string) alloc_id)
       |Some child_entry ->
         Lwt.return (alloc_id, child_entry)
 
