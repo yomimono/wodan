@@ -244,11 +244,13 @@ let lru_xset lru alloc_id value =
     match LRU.lru lru with
     |Some (_alloc_id, entry) when entry.flush_info <> None ->
       failwith "Would discard dirty data" (* TODO expose this as a proper API value *)
-    |Some (_alloc_id, entry) ->
+    |Some (old_alloc_id, entry) ->
       begin match lookup_parent_link lru entry with
       |None -> failwith "Would discard a root key, LRU too small for tree depth"
-      |Some (_parent_key, parent_entry, cl) ->
-        KeyedMap.update entry.highest_key { cl with alloc_id=None } (Lazy.force parent_entry.children)
+      |Some (_parent_key, parent_entry, cl) -> begin
+          Logs.info (fun m -> m "Dropping alloc_id %Ld" old_alloc_id);
+          KeyedMap.update entry.highest_key { cl with alloc_id=None } (Lazy.force parent_entry.children)
+        end
       end
     |_ -> failwith "LRU capacity is too small"
   end;
