@@ -254,6 +254,7 @@ let lru_xset lru alloc_id value =
       end
     |_ -> failwith "LRU capacity is too small"
   end;
+  Logs.info (fun m -> m "Adding alloc_id %Ld to the LRU" alloc_id);
   LRU.add alloc_id value lru
 
 let lru_create capacity =
