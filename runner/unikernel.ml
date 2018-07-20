@@ -29,8 +29,8 @@ module Client (C: CONSOLE) (B: Wodan.EXTBLOCK) = struct
         m "Sectors %Ld %d" info.size_sectors info.sector_size);*)
     let%lwt rootval, _gen0 = Stor.prepare_io (Wodan.FormatEmptyDevice
       Int64.(div (mul info.size_sectors @@ of_int info.sector_size) @@ of_int Stor.P.block_size)) disk 1024 in
-    (
     let root = ref rootval in
+    (
     let key = Stor.key_of_cstruct @@ Cstruct.of_string "abcdefghijklmnopqrst" in
     let cval = Stor.value_of_cstruct @@ Cstruct.of_string "sqnlnfdvulnqsvfjlllsvqoiuuoezr" in
     Stor.insert !root key cval >>= fun () ->
@@ -78,7 +78,7 @@ module Client (C: CONSOLE) (B: Wodan.EXTBLOCK) = struct
       [%lwt.finally begin
         let time1 = Unix.gettimeofday () in
         let iops = (float_of_int !ios) /. (time1 -. !time0) in
-        (*Stor.log_statistics root;*)
+        Stor.log_statistics !root;
         Logs.info (fun m -> m "IOPS %f" iops);
         Lwt.return_unit
       end]
