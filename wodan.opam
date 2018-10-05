@@ -29,7 +29,6 @@ depends: [
   "mirage-conduit"
   "optint"
   "webmachine"
-  "yaml"
   "ppx_cstruct"
   "sexplib"
   "mirage-types"
