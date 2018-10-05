@@ -26,7 +26,6 @@ depends: [
   "encore"
   "eqaf"
   "fpath"
-  "irmin-watcher"
   "mirage-conduit"
   "optint"
   "webmachine"
@@ -48,12 +47,7 @@ depends: [
   "mirage-block-unix"
   "nocrypto"
   "mirage-block-ramdisk"
-  "irmin-unix"
-  "irmin-test"
-  "irmin-mem"
   "rresult"
-  "irmin"
-  "irmin-chunk"
   "diet" {>= "0.2"}
   "mirage-types-lwt" {>= "3.0.5"}
   "ocaml-migrate-parsetree"
