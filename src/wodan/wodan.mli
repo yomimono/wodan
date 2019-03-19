@@ -41,12 +41,16 @@ exception ValueTooLarge of string
 
 exception BadNodeType of int
 
+(** The standard Mirage block signature, with Wodan-specific extensions *)
 module type EXTBLOCK = sig
   include Mirage_types_lwt.BLOCK
 
   val discard : t -> int64 -> int64 -> (unit, write_error) result io
 end
 
+(** Extend a basic Mirage block backend to provide Wodan-specific extensions
+
+    This uses stub implementations which may be incomplete. *)
 module BlockCompat (B : Mirage_types_lwt.BLOCK) : EXTBLOCK with type t = B.t
 
 (** All parameters that can't be read from the superblock *)
@@ -70,9 +74,11 @@ module type SUPERBLOCK_PARAMS = sig
   (** The exact size of all keys, in bytes *)
 end
 
+(** Defaults for SUPERBLOCK_PARAMS *)
 module StandardSuperblockParams : SUPERBLOCK_PARAMS
 
 val standard_mount_options : mount_options
+(** Defaults for mount_options *)
 
 val read_superblock_params :
   (module Mirage_types_lwt.BLOCK with type t = 'a) ->
@@ -177,13 +183,22 @@ module type S = sig
 
   val prepare_io :
     deviceOpenMode -> disk -> mount_options -> (root * int64) Lwt.t
-  (** Open a filesystem *)
+  (** Open a filesystem
+
+      Returns a root and its generation number.
+      When integrating Wodan as part of a distributed system,
+      you may want to check here that the generation number
+      has grown since the last flush *)
 end
 
+(** Build a Wodan.S module given a backing device and parameters
+
+    This is the main entry point to Wodan. *)
 module Make (B : EXTBLOCK) (P : SUPERBLOCK_PARAMS) : S with type disk = B.t
 
 type open_ret =
   | OPEN_RET : (module S with type root = 'a) * 'a * int64 -> open_ret
 
+(** Open an existing Wodan filesystem, getting static parameters from the superblock *)
 val open_for_reading :
   (module EXTBLOCK with type t = 'a) -> 'a -> mount_options -> open_ret Lwt.t
