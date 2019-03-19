@@ -49,12 +49,6 @@ end
 
 module BlockCompat (B : Mirage_types_lwt.BLOCK) : EXTBLOCK with type t = B.t
 
-type insertable =
-  | InsValue of string
-  | InsChild of (* loc, alloc_id *) int64 * int64 option
-
-val sizeof_superblock : int
-
 (** All parameters that can't be read from the superblock *)
 type mount_options = {
   (* XXX Should this be a superblock flag? *)
