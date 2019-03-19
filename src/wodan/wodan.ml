@@ -585,9 +585,9 @@ let read_superblock_params (type disk)
               let block_size = Int32.to_int (get_superblock_block_size sb) in
               let key_size = get_superblock_key_size sb in
               ( module struct
-                let block_size = block_size
+                  let block_size = block_size
 
-                let key_size = key_size
+                  let key_size = key_size
               end
               : SUPERBLOCK_PARAMS ) )
 

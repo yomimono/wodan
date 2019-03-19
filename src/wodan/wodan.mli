@@ -51,30 +51,29 @@ module BlockCompat (B : Mirage_types_lwt.BLOCK) : EXTBLOCK with type t = B.t
 
 type insertable =
   | InsValue of string
-  | InsChild of int64 * int64 option (* loc, alloc_id *)
+  | InsChild of (* loc, alloc_id *) int64 * int64 option
 
 val sizeof_superblock : int
 
 (** All parameters that can't be read from the superblock *)
 type mount_options = {
-  has_tombstone : bool;
-  (** Whether the empty value should be considered a tombstone,
-      meaning that `mem` will return no value when finding it *)
   (* XXX Should this be a superblock flag? *)
+  has_tombstone : bool;
+      (** Whether the empty value should be considered a tombstone,
+          meaning that `mem` will return no value when finding it *)
   fast_scan : bool;
-  (** If enabled, instead of checking the entire filesystem when opening,
-      leaf nodes won't be scanned.  They will be scanned on open instead. *)
-  cache_size : int
-  (** How many blocks to keep in cache *)
+      (** If enabled, instead of checking the entire filesystem when opening,
+          leaf nodes won't be scanned.  They will be scanned on open instead. *)
+  cache_size : int  (** How many blocks to keep in cache *)
 }
 
 (** All parameters that can be read from the superblock *)
 module type SUPERBLOCK_PARAMS = sig
-  (** Size of blocks, in bytes *)
   val block_size : int
+  (** Size of blocks, in bytes *)
 
-  (** The exact size of all keys, in bytes *)
   val key_size : int
+  (** The exact size of all keys, in bytes *)
 end
 
 module StandardSuperblockParams : SUPERBLOCK_PARAMS
@@ -141,50 +140,50 @@ module type S = sig
 
   val string_of_value : value -> string
 
+  val next_key : key -> key
   (** The next highest key
 
       Raises Invalid_argument if already at the highest possible key *)
-  val next_key : key -> key
 
-  (** Whether a value is a tombstone within a root *)
   val is_tombstone : root -> value -> bool
+  (** Whether a value is a tombstone within a root *)
 
+  val insert : root -> key -> value -> unit Lwt.t
   (** Store data in the filesystem
 
       Any previously stored value will be silently overwritten *)
-  val insert : root -> key -> value -> unit Lwt.t
 
-  (** Read data from the filesystem *)
   val lookup : root -> key -> value option Lwt.t
+  (** Read data from the filesystem *)
 
-  (** Check whether a key has been set within the filesystem *)
   val mem : root -> key -> bool Lwt.t
+  (** Check whether a key has been set within the filesystem *)
 
-  (** Send changes to disk *)
   val flush : root -> int64 Lwt.t
+  (** Send changes to disk *)
 
-  (** Discard all blocks which the filesystem doesn't explicitly use *)
   val fstrim : root -> int64 Lwt.t
+  (** Discard all blocks which the filesystem doesn't explicitly use *)
 
+  val live_trim : root -> int64 Lwt.t
   (** Discard blocks that have been unused since mounting
    or since the last live_trim call *)
-  val live_trim : root -> int64 Lwt.t
 
-  (** Send statistics about operations to the log *)
   val log_statistics : root -> unit
+  (** Send statistics about operations to the log *)
 
+  val search_range :
+    root -> key -> key -> (key -> value -> unit) -> unit Lwt.t
   (** Call back a function for all elements in the range from start inclusive to end_ exclusive
 
       Results are in no particular order. *)
-  val search_range :
-    root -> key -> key -> (key -> value -> unit) -> unit Lwt.t
 
-  (** Call back a function for all elements in the filesystem *)
   val iter : root -> (key -> value -> unit) -> unit Lwt.t
+  (** Call back a function for all elements in the filesystem *)
 
-  (** Open a filesystem *)
   val prepare_io :
     deviceOpenMode -> disk -> mount_options -> (root * int64) Lwt.t
+  (** Open a filesystem *)
 end
 
 module Make (B : EXTBLOCK) (P : SUPERBLOCK_PARAMS) : S with type disk = B.t

@@ -6,3 +6,4 @@ margin=79
 parens-tuple=always
 sequence-style=terminator
 type-decl=sparse
+doc-comments=after
