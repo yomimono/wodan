@@ -226,7 +226,7 @@ type node = {
   (* Use offsets so that data isn't duplicated *)
   mutable children : int64 KeyedMap.t Lazy.t;
   (* Don't reference nodes directly, always go through the
- * LRU to bump recently accessed nodes *)
+   * LRU to bump recently accessed nodes *)
   children_alloc_ids : int64 KeyedMap.t;
   mutable highest_key : string;
   raw_node : Cstruct.t;

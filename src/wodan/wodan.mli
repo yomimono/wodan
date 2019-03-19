@@ -93,14 +93,21 @@ type deviceOpenMode =
   | FormatEmptyDevice of int64
 
 module type S = sig
+  (* An opaque type for fixed-size keys
+   * Conversion from/to strings is free *)
   type key
 
+  (* An opaque type for bounded-size values
+   * Conversion from/to strings is free *)
   type value
 
+  (* A backing device *)
   type disk
 
+  (* A filesystem root *)
   type root
 
+  (* Operations over keys *)
   module Key : sig
     type t = key
 
@@ -111,6 +118,7 @@ module type S = sig
     val compare : t -> t -> int
   end
 
+  (* The parameter module that was used to create this module *)
   module P : SUPERBLOCK_PARAMS
 
   val key_of_cstruct : Cstruct.t -> key
@@ -133,29 +141,45 @@ module type S = sig
 
   val string_of_value : value -> string
 
+  (* The next highest key
+   * Raises Invalid_argument if already at the highest possible key *)
   val next_key : key -> key
 
+  (* Whether a value is a tombstone within a root *)
   val is_tombstone : root -> value -> bool
 
+  (* Store data in the filesystem
+   * Any previously stored value will be silently overwritten *)
   val insert : root -> key -> value -> unit Lwt.t
 
+  (* Read data from the filesystem *)
   val lookup : root -> key -> value option Lwt.t
 
+  (* Check whether a key has been set within the filesystem *)
   val mem : root -> key -> bool Lwt.t
 
+  (* Send changes to disk *)
   val flush : root -> int64 Lwt.t
 
+  (* Discard all blocks which the filesystem doesn't explicitly use *)
   val fstrim : root -> int64 Lwt.t
 
+  (* Discard blocks that have been unused since mounting
+   or since the last live_trim call *)
   val live_trim : root -> int64 Lwt.t
 
+  (* Send statistics about operations to the log *)
   val log_statistics : root -> unit
 
+  (* Call back a function for all elements in the range from start inclusive to end_ exclusive
+     Results are in no particular order. *)
   val search_range :
     root -> key -> key -> (key -> value -> unit) -> unit Lwt.t
 
+  (* Call back a function for all elements in the filesystem *)
   val iter : root -> (key -> value -> unit) -> unit Lwt.t
 
+  (* Open a filesystem *)
   val prepare_io :
     deviceOpenMode -> disk -> mount_options -> (root * int64) Lwt.t
 end
