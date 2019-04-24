@@ -374,10 +374,7 @@ let int64_pred_nowrap va =
 
 type insertable =
   | InsValue of string
-  | InsChild of int64 * int64 option
-
-(* loc, alloc_id *)
-
+  | InsChild of (* alloc_id *) int64
 (*|InsTombstone*)
 (* use empty values for now *)
 
@@ -1158,14 +1155,6 @@ struct
     entry.children <- KeyedMap.create ();
     KeyedMap.clear entry.children_alloc_ids
 
-  let add_child parent child child_key cache parent_key =
-    Logs.debug (fun m -> m "add_child");
-    child.meta <- Child parent_key;
-    (* No logical yet, put 0L for now *)
-    KeyedMap.xadd parent.children child.highest_key 0L;
-    KeyedMap.xadd parent.children_alloc_ids child.highest_key child_key;
-    ignore (mark_dirty cache child_key)
-
   let has_logdata entry = entry.logdata.value_end <> header_size entry.meta
 
   let update_space_map cache logical expect_sm =
@@ -1289,7 +1278,7 @@ struct
         let len = String.length value in
         let len1 = P.key_size + sizeof_datalen + len in
         InsSpaceValue len1
-    | InsChild (_loc, _alloc_id) ->
+    | InsChild _alloc_id ->
         InsSpaceChild (P.key_size + sizeof_logical)
 
   let fast_insert fs alloc_id key insertable _depth =
@@ -1317,14 +1306,17 @@ struct
                   kd.value_end <- kd.value_end - String.length prev_val + len;
                   Some value );
             ignore (mark_dirty fs.node_cache alloc_id)
-        | InsChild (loc, child_alloc_id_opt) ->
-            KeyedMap.xadd entry.children key loc;
-            ( match child_alloc_id_opt with
-            | None ->
-                ()
-            | Some child_alloc_id ->
-                KeyedMap.xadd entry.children_alloc_ids key child_alloc_id );
-            ignore (mark_dirty fs.node_cache alloc_id) )
+        | InsChild child_alloc_id ->
+          (* No logical yet, put 0L for now *)
+            KeyedMap.xadd entry.children key 0L;
+            KeyedMap.xadd entry.children_alloc_ids key child_alloc_id;
+            ignore (mark_dirty fs.node_cache child_alloc_id) )
+
+  let add_child fs parent parent_key child child_key depth =
+    Logs.debug (fun m -> m "add_child");
+    child.meta <- Child parent_key;
+    ignore parent;
+    fast_insert fs parent_key child.highest_key (InsChild child_key) depth
 
   let split_point entry =
     if has_children entry then
@@ -1623,8 +1615,8 @@ struct
               entry.flush_children <- Some (KeyedMap.create ());
               fixup_parent_links fs.node_cache alloc1 entry1;
               fixup_parent_links fs.node_cache alloc2 entry2;
-              add_child entry entry1 alloc1 fs.node_cache alloc_id;
-              add_child entry entry2 alloc2 fs.node_cache alloc_id;
+              add_child fs entry alloc_id entry1 alloc1 depth;
+              add_child fs entry alloc_id entry2 alloc2 depth;
               entry1.flush_children <- Some di;
               entry2.flush_children <- Some fc2;
               Lwt.return_unit
@@ -1683,7 +1675,7 @@ struct
                       m "Missing LRU entry for %Ld (parent)" alloc_id );
                   raise (MissingLRUEntry parent_key)
               | Some parent ->
-                  ( add_child parent entry1 alloc1 fs.node_cache parent_key;
+                  ( add_child fs parent parent_key entry1 alloc1 (Int64.pred depth);
                     match parent.flush_children with
                     | None ->
                         failwith "Missing flush_info for parent"

@@ -49,12 +49,6 @@ end
 
 module BlockCompat (B : Mirage_types_lwt.BLOCK) : EXTBLOCK with type t = B.t
 
-type insertable =
-  | InsValue of string
-  | InsChild of int64 * int64 option
-
-(* loc, alloc_id *)
-
 val sizeof_superblock : int
 
 type relax = {
