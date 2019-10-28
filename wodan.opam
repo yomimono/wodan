@@ -38,7 +38,7 @@ depends: [
   "lwt_ppx"
   "mirage-logs"
   "mirage-block"
-  "mirage-block-lwt" {>= "3.0.5"}
+  "mirage-block-lwt" {>= "1.0.0"}
   "nocrypto"
   "ppx_cstruct"
   "rresult"
